@@ -1,11 +1,11 @@
 protogen
---------
+========
 
 protogen is used to generate a serialization/deserialization interface for the
 Arke Industries unified game protocol.
 
 Overview
-========
+--------
 
 A protocol consists of RPC procedures and objects. Every procedure has an ID
 which consists of a method and a category. A procedure takes a number of
@@ -29,13 +29,13 @@ primitive types protogen requires are:
 `N` is the amount of elements (as a `u16`). They are homogenous.
 
 Stream
-======
+------
 
 The stream is required to support serialization and deserialization of every
 primitive, returning a value suitable for use in the host language.
 
 Text Format
-===========
+-----------
 
 protogen's text format is rather simple. The exact grammary is NYI, but it
 goes along the lines of:
@@ -71,7 +71,7 @@ method is considered documentation or comments until the first line starting
 with (sans whitespaces) `<ident> = ...`
 
 Usage
-=====
+-----
 
 protogen generates structure definitions for all objects and
 serialize/deserialize functions for every method's in/out pair. These take a
