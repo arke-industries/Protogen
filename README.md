@@ -85,4 +85,5 @@ Usage
 
 protogen generates structure definitions for all objects and
 serialize/deserialize functions for every method's in/out pair. These take a
-stream to write to/read from.
+stream to write to/read from. It also generates a dispatcher function that branches
+on the method type and category returning a new method handler.
