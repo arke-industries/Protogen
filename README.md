@@ -50,11 +50,11 @@ newtype MapObject = {
 	y: Coordinate,
 	planetId: ObjectId,
 	width: Size,
-	width: Size
+	height: Size
 }
 category Map { include Map.pg }
 category User {
-	method Login {
+	method Login { { authorized | unauthorized | admin | global | map } } {
 		Documentation goes here.
 
 		in = {email: string, password: string}
@@ -69,6 +69,16 @@ category User {
 The in/out pair demonstrates anonymous object declaration. Everything in a
 method is considered documentation or comments until the first line starting
 with (sans whitespaces) `<ident> = ...`
+
+The attributes after the method name alter the permissions and availability of that method.
+The authorized attribute gives access to the method to any user that has been authenticated
+by one of the methods, similiarily the unauthorized attribute gives access to unauthorized 
+users. The admin attribute allows access to only users authenticated as an admin user.
+Methods marked as admin are not added to the generated documentation file. The global and map 
+attributes restrict what server type a method may run on, the possible server types being 
+global and map. Map servers process any method related to the physical map while global servers 
+process any method not covered by a map server. All four of these attributes may be present on 
+the same method, but at least one of authorized, unauthorized and global, map must be present.
 
 Usage
 -----
