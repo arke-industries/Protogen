@@ -80,6 +80,22 @@ global and map. Map servers process any method related to the physical map while
 process any method not covered by a map server. All four of these attributes may be present on 
 the same method, but at least one of authorized, unauthorized and global, map must be present.
 
+The grammar is roughly:
+
+```
+<newtype> := newtype <ident> = (<prim> | <obj>) NL
+<prim> := (i8 | u8 | i16 | u16 | i32 | u32 | f32 | i64 | u64 | f64 | array '<' <ident> '>')
+<category> := category <ident> { ONL (<include> | <method>*) ONL } NL
+<include> := include <ident>
+<method> := method <ident> ( [ <attr>* ] )? { ONL (<property> | <comment>)* ONL } NL
+<property> := <ident> = (<obj> | <prim>)
+<comment> := <char>* NL
+<attr> := (auth | unauth | admin | global | map)
+<obj> := { ONL (<property> | <comment>)* ONL } NL
+```
+
+where NL is a newline and ONL is an optional newline
+
 Usage
 -----
 
