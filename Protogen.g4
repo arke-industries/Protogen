@@ -35,4 +35,4 @@ method : METHOD IDENT LBRACE ATTR* RBRACE LBRACE NL? comment* property* RBRACE N
 object : LBRACE NL? (field COMMA NL?)* (field COMMA? NL?)? NL? RBRACE ;
 field : IDENT ':' IDENT ;
 
-prog : (newtype | category | NL)* ;
+protocol : (newtype | category | NL)* ;
