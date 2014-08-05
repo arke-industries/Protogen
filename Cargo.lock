@@ -1,0 +1,26 @@
+[root]
+name = "protogen"
+version = "0.1.0"
+dependencies = [
+ "docopt 0.6.0 (git+https://github.com/docopt/docopt.rs#fd2377d1c36b2671136cd36566aad5d54c2fb17e)",
+ "docopt_macros 0.6.0 (git+https://github.com/docopt/docopt.rs#fd2377d1c36b2671136cd36566aad5d54c2fb17e)",
+]
+
+[[package]]
+name = "docopt"
+version = "0.6.0"
+source = "git+https://github.com/BurntSushi/docopt.rs#fd2377d1c36b2671136cd36566aad5d54c2fb17e"
+
+[[package]]
+name = "docopt"
+version = "0.6.0"
+source = "git+https://github.com/docopt/docopt.rs#fd2377d1c36b2671136cd36566aad5d54c2fb17e"
+
+[[package]]
+name = "docopt_macros"
+version = "0.6.0"
+source = "git+https://github.com/docopt/docopt.rs#fd2377d1c36b2671136cd36566aad5d54c2fb17e"
+dependencies = [
+ "docopt 0.6.0 (git+https://github.com/BurntSushi/docopt.rs#fd2377d1c36b2671136cd36566aad5d54c2fb17e)",
+]
+
