@@ -2,7 +2,8 @@ protogen
 ========
 
 protogen is used to generate a serialization/deserialization interface for the
-Arke Industries Interchange Protocol (AIIP).
+Arke Industries Interchange Protocol (AIIP). It is made available under the
+terms of the [MIT license}(LICENSE).
 
 Overview
 --------
@@ -37,8 +38,7 @@ primitive, returning a value suitable for use in the host language.
 Text Format
 -----------
 
-protogen's text format is rather simple. The exact grammar is NYI, but it
-goes along the lines of:
+An example showing every feature of protogen:
 
 ```
 newtype ObjectId = u64;
@@ -67,9 +67,10 @@ category User {
 `include` is literal, textual inclusion, along the lines of the C preprocessor
 (though without any of its other features).
 
-The in/out pair demonstrates anonymous object declaration. Everything in a
+The `in`/`out` pair demonstrates anonymous object declaration. Everything in a
 method is considered documentation until the first line starting with (sans
-whitespace) `<ident> = ...`
+whitespace) `<ident> = ...`. The only properties allowed in methods at this
+time are `in` and `out`.
 
 The attributes after the method name alter the permissions and availability of
 that method. The `auth` attribute gives access to the method to any user that
@@ -86,6 +87,14 @@ An approxmiate reference grammar, using antlr4, is provided in `Protogen.g4`.
 Note that it is incorrect: due to the ambiguity between a comment and a
 property, it considers `in = u32;` to be a comment.
 
+Object Layout
+-------------
+
+protogen is primarily concerned with shuttling data across the wire, and as
+such does not add any padding to objects, and does not require any alignment.
+Each field of an object is laid out one after another, using only the exact
+amount of bytes required to store the field.
+
 Usage
 -----
 
@@ -93,3 +102,6 @@ protogen generates structure definitions for all objects and
 serialize/deserialize functions for every method's in/out pair. These take a
 stream to write to/read from. It also generates a dispatcher function that
 branches on the method type and category returning a new method handler.
+
+protogen is implemented in the [Rust](http://rust-lang.org/) programming
+language. Build it with `cargo build`.
