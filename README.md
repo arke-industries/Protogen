@@ -55,7 +55,8 @@ newtype MapObject = {
 category Map { include "Map.pg"; }
 category User {
 	method Login { unauth global } {
-        Authenticates to the server using an email/password, returning the corresponding users' ID.
+        Authenticates to the server using an email/password, returning the
+        corresponding users' ID.
 
 		in = {email: string, password: string};
 		out = {userId: ObjectId };
@@ -70,23 +71,26 @@ The in/out pair demonstrates anonymous object declaration. Everything in a
 method is considered documentation or comments until the first line starting
 with (sans whitespace) `<ident> = ...`
 
-The attributes after the method name alter the permissions and availability of that method.
-The authorized attribute gives access to the method to any user that has been authenticated
-by one of the methods, similarity the unauthorized attribute gives access to unauthorized
-users. The admin attribute allows access to only users authenticated as an admin user.
-Methods marked as admin are not added to the generated documentation file. The global and map
-attributes restrict what server type a method may run on, the possible server types being
-global and map. Map servers process any method related to the physical map while global servers
-process any method not covered by a map server. All four of these attributes may be present on
-the same method, but at least one of authorized, unauthorized and global, map must be present.
+The attributes after the method name alter the permissions and availability of
+that method.  The authorized attribute gives access to the method to any user
+that has been authenticated by one of the methods, similarity the unauthorized
+attribute gives access to unauthorized users. The admin attribute allows access
+to only users authenticated as an admin user.  Methods marked as admin are not
+added to the generated documentation file. The global and map attributes
+restrict what server type a method may run on, the possible server types being
+global and map. Map servers process any method related to the physical map while
+global servers process any method not covered by a map server. All four of these
+attributes may be present on the same method, but at least one of authorized,
+unauthorized and global, map must be present.
 
-An approxmiate reference grammar, using antlr4, is provided in `Protogen.g4`. Note that it is incorrect: due to the
-ambiguity between a comment and a property, it considers `in = u32;` to be a comment.
+An approxmiate reference grammar, using antlr4, is provided in `Protogen.g4`.
+Note that it is incorrect: due to the ambiguity between a comment and a
+property, it considers `in = u32;` to be a comment.
 
 Usage
 -----
 
 protogen generates structure definitions for all objects and
 serialize/deserialize functions for every method's in/out pair. These take a
-stream to write to/read from. It also generates a dispatcher function that branches
-on the method type and category returning a new method handler.
+stream to write to/read from. It also generates a dispatcher function that
+branches on the method type and category returning a new method handler.
