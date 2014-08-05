@@ -41,9 +41,9 @@ protogen's text format is rather simple. The exact grammar is NYI, but it
 goes along the lines of:
 
 ```
-newtype ObjectId = u64
-newtype Coordinate = f64
-newtype Size = u32
+newtype ObjectId = u64;
+newtype Coordinate = f64;
+newtype Size = u32;
 
 newtype MapObject = {
 	x: Coordinate,
@@ -52,13 +52,13 @@ newtype MapObject = {
 	width: Size,
 	height: Size
 }
-category Map { include Map.pg }
+category Map { include "Map.pg"; }
 category User {
-	method Login { { authorized | unauthorized | admin | global | map } } {
-		Documentation goes here.
+	method Login { unauth global } {
+        Authenticates to the server using an email/password, returning the corresponding users' ID.
 
-		in = {email: string, password: string}
-		out = {userId: ObjectId }
+		in = {email: string, password: string};
+		out = {userId: ObjectId };
 	}
 }
 ```
@@ -80,21 +80,8 @@ global and map. Map servers process any method related to the physical map while
 process any method not covered by a map server. All four of these attributes may be present on
 the same method, but at least one of authorized, unauthorized and global, map must be present.
 
-The grammar is roughly:
-
-```
-<newtype> := newtype <ident> = (<prim> | <obj>) NL
-<prim> := (i8 | u8 | i16 | u16 | i32 | u32 | f32 | i64 | u64 | f64 | array '<' <ident> '>')
-<category> := category <ident> { ONL (<include> | <method>*) ONL } NL
-<include> := include <ident>
-<method> := method <ident> ( [ <attr>* ] )? { ONL (<property> | <comment>)* ONL } NL
-<property> := <ident> = (<obj> | <prim>)
-<comment> := <char>* NL
-<attr> := (auth | unauth | admin | global | map)
-<obj> := { ONL (<property> | <comment>)* ONL } NL
-```
-
-where NL is a newline and ONL is an optional newline
+An approxmiate reference grammar, using antlr4, is provided in `Protogen.g4`. Note that it is incorrect: due to the
+ambiguity between a comment and a property, it considers `in = u32;` to be a comment.
 
 Usage
 -----
