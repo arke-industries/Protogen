@@ -65,23 +65,22 @@ category User {
 ```
 
 `include` is literal, textual inclusion, along the lines of the C preprocessor
-(though without any other of its features).
+(though without any of its other features).
 
 The in/out pair demonstrates anonymous object declaration. Everything in a
-method is considered documentation or comments until the first line starting
-with (sans whitespace) `<ident> = ...`
+method is considered documentation until the first line starting with (sans
+whitespace) `<ident> = ...`
 
 The attributes after the method name alter the permissions and availability of
-that method.  The authorized attribute gives access to the method to any user
-that has been authenticated by one of the methods, similarity the unauthorized
-attribute gives access to unauthorized users. The admin attribute allows access
-to only users authenticated as an admin user.  Methods marked as admin are not
-added to the generated documentation file. The global and map attributes
-restrict what server type a method may run on, the possible server types being
-global and map. Map servers process any method related to the physical map while
-global servers process any method not covered by a map server. All four of these
-attributes may be present on the same method, but at least one of authorized,
-unauthorized and global, map must be present.
+that method. The `auth` attribute gives access to the method to any user that
+has been authenticated. Similarly, the `unauth` attribute gives access to
+unauthorized users. The `admin` attribute allows access only to users authorized
+as an admin. The `global` and `map` attributes restrict the types of servers the
+procedure can be called on. Map servers process any method related to the
+physical map while global servers process any method not covered by a map
+server. `admin` is mutually exclusive with both `auth` and `unauth`. `map` and
+`global` are mutually exclusive. Any non-mutually-exclusive attributes may be
+combined.
 
 An approxmiate reference grammar, using antlr4, is provided in `Protogen.g4`.
 Note that it is incorrect: due to the ambiguity between a comment and a
