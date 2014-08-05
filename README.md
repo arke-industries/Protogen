@@ -2,7 +2,7 @@ protogen
 ========
 
 protogen is used to generate a serialization/deserialization interface for the
-Arke Industries unified game protocol.
+Arke Industries Interchange Protocol (AIIP).
 
 Overview
 --------
