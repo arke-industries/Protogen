@@ -88,6 +88,7 @@ enum Token {
     RBRACE,
     COMMA,
     EQ,
+    COLON,
 
     NL,
 }
@@ -140,6 +141,7 @@ impl<R: std::io::Buffer> Iterator<Token> for Lexer<R> {
                     }
                 },
                 ';' => return Some(SEMI),
+                ':' => return Some(COLON),
                 '{' => return Some(LBRACE),
                 '}' => return Some(RBRACE),
                 ',' => return Some(COMMA),
