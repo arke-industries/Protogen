@@ -37,7 +37,8 @@ fn main() {
 
     println!("Args: {}", args);
 
-    let proto = parser::parse(std::io::BufferedReader::new(File::open(&Path::new(args.arg_infile))));
+    let proto = parser::parse(std::io::BufferedReader::new(File::open(&Path::new(args.arg_infile)))
+                              .chars().map(|io| io.unwrap()).peekable());
 
     println!("{}", proto);
 }

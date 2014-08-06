@@ -94,51 +94,65 @@ enum Token {
 }
 
 struct Lexer<R> {
-    reader: R,
+    reader: std::iter::Peekable<char, R>,
 }
 
-impl<R: std::io::Buffer> Iterator<Token> for Lexer<R> {
+impl<R: Iterator<char>> Iterator<Token> for Lexer<R> {
     fn next(&mut self) -> Option<Token> {
         // IO errors are interesting and never expected.
-        let mut chrs = self.reader.chars().map(|io| io.unwrap()).peekable();
-        for c in chrs {
+        let mut ident_token = None;
+        for c in self.reader {
             // could be anything...
             match c {
                 // string literal
                 '"' => {
-                    return Some(STRING(chrs.take_while(|&c| c != '"').collect()));
+                    return Some(STRING(self.reader.by_ref().take_while(|&c| c != '"').collect()));
                 }
                 '\n' => {
                     return Some(NL);
                 },
                 '\r' => {
-                    if chrs.next().unwrap() != '\n' {
+                    if self.reader.next().unwrap() != '\n' {
                         error!("CR found not followed by LF!");
                     }
                     return Some(NL);
                 }
                 // keyword or identifier
                 c @ 'a'..'z' | c @ 'A'..'Z' | c @ '_' => {
-                    let ident = Some(c).move_iter().chain(chrs.take_while(|&c| c.is_alphanumeric() || c == '_')).collect::<String>();
-                    match ident.as_slice() {
-                        "auth" => return Some(ATTR(Auth)),
-                        "unauth" => return Some(ATTR(Unauth)),
-                        "admin" => return Some(ATTR(Admin)),
-                        "global" => return Some(ATTR(Global)),
-                        "map" => return Some(ATTR(Map)),
-                        "newtype" => return Some(NEWTYPE),
-                        "category" => return Some(CATEGORY),
-                        "include" => return Some(INCLUDE),
-                        "method" => return Some(METHOD),
-                        "in" => return Some(IN),
-                        "out" => return Some(OUT),
-                        non_keyword => {
-                            match try_parse_type(non_keyword) {
-                                Some(t) => return Some(PRIM(t)),
-                                None => return Some(IDENT(non_keyword.to_string()))
-                            }
+                    let mut ident = String::with_capacity(16);
+                    ident.push_char(c);
+                    loop {
+                        let c = *self.reader.peek().unwrap();
+                        if c.is_alphanumeric() || c == '_' {
+                            let c = self.reader.next().unwrap();
+                            ident.push_char(c);
+                        } else {
+                            break;
                         }
                     }
+
+                    // we just accidentally read past the character after the ident. do some
+                    // shenanigans to get outside of the chrs borrow and seek.
+                    ident_token = match ident.as_slice() {
+                        "auth" => Some(ATTR(Auth)),
+                        "unauth" => Some(ATTR(Unauth)),
+                        "admin" => Some(ATTR(Admin)),
+                        "global" => Some(ATTR(Global)),
+                        "map" => Some(ATTR(Map)),
+                        "newtype" => Some(NEWTYPE),
+                        "category" => Some(CATEGORY),
+                        "include" => Some(INCLUDE),
+                        "method" => Some(METHOD),
+                        "in" => Some(IN),
+                        "out" => Some(OUT),
+                        non_keyword => {
+                            match try_parse_type(non_keyword) {
+                                Some(t) => Some(PRIM(t)),
+                                None => Some(IDENT(non_keyword.to_string()))
+                            }
+                        }
+                    };
+                    break
                 },
                 ';' => return Some(SEMI),
                 ':' => return Some(COLON),
@@ -150,11 +164,11 @@ impl<R: std::io::Buffer> Iterator<Token> for Lexer<R> {
                 wat => error!("Found unexpected character when lexing: {}", wat),
             }
         }
-        None
+        ident_token
     }
 }
 
-pub fn parse<R: std::io::Buffer>(f: R) -> Result<Protocol, ParseError> {
+pub fn parse<R: Iterator<char>>(f: std::iter::Peekable<char, R>) -> Result<Protocol, ParseError> {
     let mut lex = Lexer { reader: f };
     for tok in lex {
         println!("{}", tok);
