@@ -12,8 +12,8 @@ newtype MapObject = {
 category Map { include "Map.pg"; }
 category User {
 	method Login { unauth global } {
-        Authenticates to the server using an email/password, returning the
-        corresponding users' ID.
+        ' Authenticates to the server using an email/password, returning the
+        ' corresponding users' ID.
 
 		in = {email: string, password: string};
 		out = {userId: ObjectId };

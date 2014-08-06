@@ -22,17 +22,15 @@ OUT : 'out' ;
 
 STRING : '"' ~["]* '"' ;
 IDENT : [a-zA-Z_][a-zA-Z_0-9]* ;
-WS : [ \t]+ -> skip;
-NL : '\n' | '\r\n' ;
-EXTRA : . ;
+WS : [ \r\n\t]+ -> skip;
+COMMENT : '\'' .*? ('\r\n' | '\n') ;
 
 newtype : NEWTYPE IDENT EQ (PRIM SEMI | object) ;
-category : CATEGORY IDENT LBRACE NL? (include | method)* RBRACE NL? ;
-include : INCLUDE STRING SEMI NL? ;
-property : (IN | OUT) '=' (object | PRIM) SEMI NL ?;
-comment : .*? NL ;
-method : METHOD IDENT LBRACE ATTR* RBRACE LBRACE NL? comment* property* RBRACE NL ?;
-object : LBRACE NL? (field COMMA NL?)* (field COMMA? NL?)? NL? RBRACE ;
+category : CATEGORY IDENT LBRACE (include | method) RBRACE ;
+include : INCLUDE STRING SEMI ;
+property : (IN | OUT) '=' (object | PRIM) SEMI ;
+method : METHOD IDENT LBRACE ATTR* RBRACE LBRACE COMMENT* property* RBRACE ;
+object : LBRACE (field COMMA)* (field COMMA?)? RBRACE ;
 field : IDENT ':' IDENT ;
 
-protocol : (newtype | category | NL)* ;
+protocol : (newtype | category | include)* ;

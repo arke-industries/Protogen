@@ -3,7 +3,7 @@ protogen
 
 protogen is used to generate a serialization/deserialization interface for the
 Arke Industries Interchange Protocol (AIIP). It is made available under the
-terms of the [MIT license}(LICENSE).
+terms of the [MIT license](LICENSE).
 
 Overview
 --------
@@ -38,31 +38,7 @@ primitive, returning a value suitable for use in the host language.
 Text Format
 -----------
 
-An example showing every feature of protogen:
-
-```
-newtype ObjectId = u64;
-newtype Coordinate = f64;
-newtype Size = u32;
-
-newtype MapObject = {
-	x: Coordinate,
-	y: Coordinate,
-	planetId: ObjectId,
-	width: Size,
-	height: Size
-}
-category Map { include "Map.pg"; }
-category User {
-	method Login { unauth global } {
-        Authenticates to the server using an email/password, returning the
-        corresponding users' ID.
-
-		in = {email: string, password: string};
-		out = {userId: ObjectId };
-	}
-}
-```
+An example showing every feature of protogen is available in `example.pg`.
 
 `include` is literal, textual inclusion, along the lines of the C preprocessor
 (though without any of its other features).
