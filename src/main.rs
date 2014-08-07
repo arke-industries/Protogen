@@ -21,11 +21,12 @@ extern crate docopt;
 
 
 docopt!(Args, "
-Usage: protogen [-l] [-o <outfile>] <infile>
+Usage: protogen [-l | -p] [-o <outfile>] <infile>
 
 Options:
-    -o, --output    File to write generated code to.
-    -l, --lex-only  Only run the lexer.
+    -o, --output      File to write generated code to.
+    -l, --lex-only    Only run the lexer, printing out the token stream.
+    -p, --parse-only  Only run the parser, printing out the parsed protocol.
 ")
 
 mod parser;
@@ -35,13 +36,16 @@ fn main() {
 
     let args: Args = FlagParser::parse().unwrap_or_else(|e| e.exit());
 
-    println!("Args: {}", args);
+    debug!("Args: {}", args);
 
     if args.flag_lex_only {
         parser::lex(args.arg_infile);
         return;
     }
-    let proto = parser::parse(args.arg_infile);
+    let proto = parser::parse(args.arg_infile).ok().expect("Failed to parse!");
 
-    println!("{}", proto);
+    if args.flag_parse_only {
+        println!("{}", proto);
+        return;
+    }
 }
