@@ -21,24 +21,27 @@ extern crate docopt;
 
 
 docopt!(Args, "
-Usage: protogen [-o <outfile>] <infile>
+Usage: protogen [-l] [-o <outfile>] <infile>
 
 Options:
-    -o, --output  File to write generated code to.
+    -o, --output    File to write generated code to.
+    -l, --lex-only  Only run the lexer.
 ")
 
 mod parser;
 
 fn main() {
     use docopt::FlagParser;
-    use std::io::File;
 
     let args: Args = FlagParser::parse().unwrap_or_else(|e| e.exit());
 
     println!("Args: {}", args);
 
-    let proto = parser::parse(std::io::BufferedReader::new(File::open(&Path::new(args.arg_infile)))
-                              .chars().map(|io| io.unwrap()).peekable());
+    if args.flag_lex_only {
+        parser::lex(args.arg_infile);
+        return;
+    }
+    let proto = parser::parse(args.arg_infile);
 
     println!("{}", proto);
 }

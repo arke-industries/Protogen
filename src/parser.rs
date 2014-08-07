@@ -19,7 +19,7 @@ pub struct Protocol {
     categories: HashMap<String, Category>,
 }
 
-#[deriving(Show, Ord, Eq, PartialOrd, PartialEq, Hash, Encodable, Decodable)]
+#[deriving(Show, Clone, Ord, Eq, PartialOrd, PartialEq, Hash, Encodable, Decodable)]
 pub enum Type {
     I8, U8,
     I16, U16,
@@ -27,30 +27,24 @@ pub enum Type {
     I64, U64, F64,
     Array(Box<Type>),
     Aggregate(Object),
+    NamedType(String),
 }
 
-#[deriving(Show, Ord, Eq, PartialOrd, PartialEq, Hash, Encodable, Decodable)]
+#[deriving(Show, Clone, Ord, Eq, PartialOrd, PartialEq, Hash, Encodable, Decodable)]
 pub struct Object {
     fields: Vec<(String, Type)>,
 }
 
 #[deriving(Show)]
 pub struct Category {
-    name: String,
     methods: HashMap<String, Method>,
 }
 
 #[deriving(Show, Encodable, Decodable)]
 pub struct Method {
     comment: String,
-    properties: HashMap<String, Property>,
+    properties: HashMap<String, Type>,
     attributes: Vec<Attr>,
-}
-
-#[deriving(Show, Ord, Eq, PartialOrd, PartialEq, Hash, Encodable, Decodable)]
-pub enum Property {
-    In(Type),
-    Out(Type)
 }
 
 #[deriving(Show, Ord, Eq, PartialOrd, PartialEq, Hash, Encodable, Decodable)]
@@ -60,7 +54,7 @@ pub enum ParseError {
     Other(String)
 }
 
-#[deriving(Show, Ord, Eq, PartialOrd, PartialEq, Hash, Encodable, Decodable)]
+#[deriving(Show, Clone, Ord, Eq, PartialOrd, PartialEq, Hash, Encodable, Decodable)]
 pub enum Attr {
     Auth,
     Unauth,
@@ -69,19 +63,18 @@ pub enum Attr {
     Map,
 }
 
-#[deriving(Show, Ord, Eq, PartialOrd, PartialEq, Hash, Encodable, Decodable)]
+#[deriving(Show, Clone, Ord, Eq, PartialOrd, PartialEq, Hash, Encodable, Decodable)]
 enum Token {
     ATTR(Attr),
     STRING(String),
     IDENT(String),
     PRIM(Type),
+    COMMENT(String),
 
     NEWTYPE,
     CATEGORY,
     INCLUDE,
     METHOD,
-    IN,
-    OUT,
 
     SEMI,
     LBRACE,
@@ -90,15 +83,35 @@ enum Token {
     EQ,
     COLON,
 
-    NL,
+    EOF,
 }
 
 struct Lexer<R> {
     reader: std::iter::Peekable<char, R>,
+    done: bool,
+}
+
+type BufferedReader = std::io::BufferedReader<Result<std::io::fs::File, std::io::IoError>>;
+type Filator<'a, 'b> = std::iter::Map<'a,
+    Result<char, std::io::IoError>,
+    char,
+    std::io::Chars<'b, BufferedReader>
+>;
+
+impl<'a> Lexer<Filator<'static, 'a>> {
+    fn new(buf: &'a mut BufferedReader) -> Lexer<Filator<'static, 'a>> {
+        Lexer {
+            done: false,
+            reader: buf.chars().map(|io| io.unwrap()).peekable(),
+        }
+    }
 }
 
 impl<R: Iterator<char>> Iterator<Token> for Lexer<R> {
     fn next(&mut self) -> Option<Token> {
+        if self.done {
+            return None;
+        }
         // IO errors are interesting and never expected.
         let mut ident_token = None;
         for c in self.reader {
@@ -108,15 +121,24 @@ impl<R: Iterator<char>> Iterator<Token> for Lexer<R> {
                 '"' => {
                     return Some(STRING(self.reader.by_ref().take_while(|&c| c != '"').collect()));
                 }
-                '\n' => {
-                    return Some(NL);
-                },
                 '\r' => {
-                    if self.reader.next().unwrap() != '\n' {
+                    if *self.reader.peek().unwrap() != '\n' {
                         error!("CR found not followed by LF!");
+                    } else {
+                        self.reader.next();
                     }
-                    return Some(NL);
-                }
+                },
+                '\'' => {
+                    let c: String = self.reader.by_ref().take_while(|&c| c != '\n' && c != '\r').collect();
+                    let mut c = c.as_slice();
+                    if c.ends_with("\r") {
+                        if self.reader.next().unwrap() != '\n' {
+                            error!("CR found not follwed by LF!");
+                        }
+                        c = c.slice_to(c.len() - 2)
+                    }
+                    return Some(COMMENT(c.to_string()));
+                },
                 // keyword or identifier
                 c @ 'a'..'z' | c @ 'A'..'Z' | c @ '_' => {
                     let mut ident = String::with_capacity(16);
@@ -143,8 +165,6 @@ impl<R: Iterator<char>> Iterator<Token> for Lexer<R> {
                         "category" => Some(CATEGORY),
                         "include" => Some(INCLUDE),
                         "method" => Some(METHOD),
-                        "in" => Some(IN),
-                        "out" => Some(OUT),
                         non_keyword => {
                             match try_parse_type(non_keyword) {
                                 Some(t) => Some(PRIM(t)),
@@ -160,26 +180,262 @@ impl<R: Iterator<char>> Iterator<Token> for Lexer<R> {
                 '}' => return Some(RBRACE),
                 ',' => return Some(COMMA),
                 '=' => return Some(EQ),
-                ' ' | '\t' => continue,
-                wat => error!("Found unexpected character when lexing: {}", wat),
+                ' ' | '\t' | '\n' => continue,
+                wat => error!("Found unexpected character when lexing: `{}`", wat),
             }
         }
-        ident_token
+        match ident_token {
+            Some(t) => Some(t),
+            None => { self.done = true; Some(EOF) }
+        }
     }
 }
 
-pub fn parse<R: Iterator<char>>(f: std::iter::Peekable<char, R>) -> Result<Protocol, ParseError> {
-    let mut lex = Lexer { reader: f };
-    for tok in lex {
-        println!("{}", tok);
+struct TokenRepr {
+    tag: u8,
+    // ... fields ...
+}
+
+fn token_types_eq(t1: &Token, t2: &Token) -> bool {
+    use std::mem::transmute;
+    let (a, b): (&TokenRepr, &TokenRepr) = unsafe { (transmute(t1), transmute(t2)) };
+    a.tag == b.tag
+}
+
+struct Parser<R> {
+    lexer: Lexer<R>,
+    lookahead: Token,
+}
+
+impl<R: Iterator<char>> Parser<R> {
+    fn new(mut l: Lexer<R>) -> Parser<R> {
+        let next = l.next().unwrap();
+        Parser {
+            lexer: l,
+            lookahead: next
+        }
     }
 
-    let mut proto = Protocol {
-        types: HashMap::new(),
-        categories: HashMap::new(),
-    };
+    fn next(&mut self) -> Token {
+        // if we're at EOF already, the lexer is going to return None. This is harmless, fill it
+        // with EOF instead.
+        let mut next = self.lexer.next().unwrap_or(EOF);
+        std::mem::swap(&mut self.lookahead, &mut next);
+        debug!("next: got token {}, lookahead is {}", next, self.lookahead);
+        next
+    }
 
-    Ok(proto)
+    fn expect(&mut self, tok: Token) -> Token {
+        let next = self.next();
+        if !token_types_eq(&tok, &next) {
+            debug!("expect lookahead: {}", self.lookahead);
+            fail!("Expected `{}`, found `{}`", tok, next);
+        }
+        next
+    }
+
+    fn expect_one_of(&mut self, toks: &[Token]) -> Token {
+        let next = self.lookahead.clone();
+        debug!("expect_one_of lookahead: {}", next);
+        for tok in toks.iter() {
+            if token_types_eq(tok, &next) {
+                return self.next();
+            }
+        }
+        fail!("Unexpected token `{}`, expected one of: {}", next, toks.iter().map(|t| t.to_string()).collect::<Vec<String>>().connect(", "))
+    }
+
+    fn expect_string(&mut self) -> String {
+        match self.expect(STRING(String::new())) {
+            STRING(s) => s,
+            _ => unreachable!()
+        }
+    }
+
+    fn expect_ident(&mut self) -> String {
+        match self.expect(IDENT(String::new())) {
+            IDENT(s) => s,
+            _ => unreachable!()
+        }
+    }
+
+    fn parse_protocol(&mut self) -> Protocol {
+        let mut proto = Protocol {
+            types: HashMap::new(),
+            categories: HashMap::new()
+        };
+
+        loop {
+            match self.expect_one_of([NEWTYPE, CATEGORY, INCLUDE, EOF]) {
+                NEWTYPE => {
+                    let (name, type_) = self.parse_newtype();
+                    proto.types.insert(name, type_);
+                },
+                CATEGORY => {
+                    let (name, category) = self.parse_category();
+                    proto.categories.insert(name, category);
+                },
+                INCLUDE => {
+                    let p = self.expect_string();
+                    let mut buf = open(p);
+                    let mut parser = Parser::new(Lexer::new(&mut buf));
+                    let Protocol { types, categories } = parser.parse_protocol();
+                    proto.types.extend(types.move_iter());
+                    proto.categories.extend(categories.move_iter());
+                    self.expect(SEMI);
+                },
+                EOF => break,
+                _ => unreachable!(),
+            }
+        }
+
+        proto
+    }
+
+    fn parse_newtype(&mut self) -> (String, Type) {
+        let name = self.expect_ident();
+        self.expect(EQ);
+        let ty = self.parse_type();
+        match ty {
+            Aggregate(..) => { },
+            _ => { self.expect(SEMI); }
+        }
+        (name, ty)
+    }
+
+    fn parse_category(&mut self) -> (String, Category) {
+        let name = self.expect_ident();
+        self.expect(LBRACE);
+
+        let mut cat = Category { methods: HashMap::new() };
+        self.parse_category_body(&mut cat);
+        (name, cat)
+    }
+
+    fn parse_category_body(&mut self, cat: &mut Category) {
+        loop {
+            match self.expect_one_of([INCLUDE, METHOD, RBRACE, EOF]) {
+                EOF | RBRACE => break,
+                INCLUDE => {
+                    let s = self.expect_string();
+                    let mut buf = open(s);
+                    let mut parser = Parser::new(Lexer::new(&mut buf));
+                    parser.parse_category_body(cat);
+                    self.expect(SEMI);
+                },
+                METHOD => {
+                    let name = self.expect_ident();
+                    let meth = self.parse_method();
+                    cat.methods.insert(name, meth);
+                },
+                _ => unreachable!()
+            }
+        }
+    }
+
+    fn parse_method(&mut self) -> Method {
+        self.expect(LBRACE);
+        let mut attrs = Vec::new();
+        loop {
+            match self.expect_one_of([ATTR(Auth), RBRACE]) {
+                ATTR(a) => {
+                    attrs.push(a);
+                    match self.lookahead {
+                        COMMA => { debug_assert_eq!(COMMA, self.next()); },
+                        _ => { }
+                    }
+                },
+                RBRACE => break,
+                _ => unreachable!(),
+            }
+        }
+        let mut comment = String::new();
+        let mut props = HashMap::new();
+        let mut first_prop = None;
+        self.expect(LBRACE);
+        loop {
+            match self.expect_one_of([COMMENT(String::new()), IDENT(String::new()), RBRACE]) {
+                // slice off the leading '
+                COMMENT(c) => { comment.push_str(c.as_slice().slice_from(1)); comment.push_char('\n'); },
+                IDENT(c) => { first_prop = Some(c); break },
+                RBRACE => break,
+                _ => unreachable!(),
+            }
+        }
+        match first_prop {
+            Some(id) => {
+                props.insert(id, self.parse_property());
+                loop {
+                    match self.expect_one_of([IDENT(String::new()), RBRACE]) {
+                        IDENT(i) => { props.insert(i, self.parse_property()); },
+                        RBRACE => break,
+                        _ => unreachable!()
+                    }
+                }
+            },
+            None => { }
+        }
+
+        Method {
+            comment: comment,
+            properties: props,
+            attributes: attrs,
+        }
+    }
+
+    fn parse_property(&mut self) -> Type {
+        self.expect(EQ);
+        let ty = self.parse_type();
+        self.expect(SEMI);
+        ty
+    }
+
+    fn parse_type(&mut self) -> Type {
+        match self.expect_one_of([PRIM(I8), IDENT(String::new()), LBRACE]) {
+            PRIM(ty) => ty,
+            IDENT(ty) => NamedType(ty),
+            LBRACE => {
+                self.parse_aggregate()
+            },
+            _ => unreachable!(),
+        }
+    }
+
+    fn parse_aggregate(&mut self) -> Type {
+        let mut fields = Vec::new();
+        loop {
+            match self.expect_one_of([IDENT(String::new()), RBRACE, COMMA]) {
+                IDENT(name) => {
+                    self.expect(COLON);
+                    let type_ = self.parse_type();
+                    fields.push((name, type_));
+                    match self.lookahead {
+                        COMMA => { debug_assert_eq!(COMMA, self.next()); },
+                        _ => { }
+                    }
+                },
+                COMMA => continue,
+                RBRACE => break,
+                _ => unreachable!(),
+            }
+        }
+        Aggregate(Object { fields: fields })
+    }
+}
+
+pub fn parse(file: String) -> Result<Protocol, ParseError> {
+    let mut buf = open(file);
+    let mut parser = Parser::new(Lexer::new(&mut buf));
+
+    Ok(parser.parse_protocol())
+}
+
+pub fn lex(file: String) {
+    let mut buf = open(file);
+    let mut lexer = Lexer::new(&mut buf);
+    for tok in lexer {
+        println!("{}", tok);
+    }
 }
 
 fn try_parse_type(s: &str) -> Option<Type> {
@@ -203,3 +459,6 @@ fn try_parse_type(s: &str) -> Option<Type> {
     }
 }
 
+fn open(p: String) -> BufferedReader {
+    std::io::BufferedReader::new(std::io::File::open(&Path::new(p.as_slice())))
+}
