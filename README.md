@@ -59,9 +59,8 @@ server. `admin` is mutually exclusive with both `auth` and `unauth`. `map` and
 `global` are mutually exclusive. Any non-mutually-exclusive attributes may be
 combined.
 
-An approxmiate reference grammar, using antlr4, is provided in `Protogen.g4`.
-Note that it is incorrect: due to the ambiguity between a comment and a
-property, it considers `in = u32;` to be a comment.
+A reference grammar, using antlr4, is provided in `Protogen.g4`. Any
+divergence is a bug in the implementation.
 
 Object Layout
 -------------

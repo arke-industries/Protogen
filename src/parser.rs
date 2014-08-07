@@ -37,12 +37,14 @@ pub struct Object {
 
 #[deriving(Show)]
 pub struct Category {
+    id: u64,
     methods: HashMap<String, Method>,
 }
 
 #[deriving(Show, Encodable, Decodable)]
 pub struct Method {
     comment: String,
+    id: u64,
     properties: HashMap<String, Type>,
     attributes: Vec<Attr>,
 }
@@ -70,6 +72,7 @@ enum Token {
     IDENT(String),
     PRIM(Type),
     COMMENT(String),
+    LIT(u64),
 
     NEWTYPE,
     CATEGORY,
@@ -138,6 +141,19 @@ impl<R: Iterator<char>> Iterator<Token> for Lexer<R> {
                         c = c.slice_to(c.len() - 2)
                     }
                     return Some(COMMENT(c.to_string()));
+                },
+                c @ '0'..'9' => {
+                    let mut lit = String::new();
+                    lit.push_char(c);
+                    loop {
+                        if self.reader.peek().unwrap().is_digit() {
+                            let c = self.reader.next().unwrap();
+                            lit.push_char(c);
+                        } else {
+                            break;
+                        }
+                    }
+                    return Some(LIT(from_str(lit.as_slice()).expect("Lexer accepted invalid numeric literal!")));
                 },
                 // keyword or identifier
                 c @ 'a'..'z' | c @ 'A'..'Z' | c @ '_' => {
@@ -259,6 +275,13 @@ impl<R: Iterator<char>> Parser<R> {
         }
     }
 
+    fn expect_lit(&mut self) -> u64 {
+        match self.expect(LIT(0)) {
+            LIT(lit) => lit,
+            _ => unreachable!()
+        }
+    }
+
     fn parse_protocol(&mut self) -> Protocol {
         let mut proto = Protocol {
             types: HashMap::new(),
@@ -305,9 +328,11 @@ impl<R: Iterator<char>> Parser<R> {
 
     fn parse_category(&mut self) -> (String, Category) {
         let name = self.expect_ident();
+        self.expect(EQ);
+        let id = self.expect_lit();
         self.expect(LBRACE);
 
-        let mut cat = Category { methods: HashMap::new() };
+        let mut cat = Category { id: id, methods: HashMap::new() };
         self.parse_category_body(&mut cat);
         (name, cat)
     }
@@ -334,6 +359,8 @@ impl<R: Iterator<char>> Parser<R> {
     }
 
     fn parse_method(&mut self) -> Method {
+        self.expect(EQ);
+        let id = self.expect_lit();
         self.expect(LBRACE);
         let mut attrs = Vec::new();
         loop {
@@ -377,6 +404,7 @@ impl<R: Iterator<char>> Parser<R> {
         }
 
         Method {
+            id: id,
             comment: comment,
             properties: props,
             attributes: attrs,

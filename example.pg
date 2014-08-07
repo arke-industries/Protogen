@@ -9,9 +9,9 @@ newtype MapObject = {
 	width: Size,
 	height: Size
 }
-category Map { include "Map.pg"; }
-category User {
-	method Login { unauth global } {
+category Map = 0 { include "Map.pg"; }
+category User = 1 {
+	method Login = 0 { unauth global } {
         ' Authenticates to the server using an email/password, returning the
         ' corresponding users' ID.
 

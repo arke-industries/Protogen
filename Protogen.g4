@@ -22,14 +22,15 @@ OUT : 'out' ;
 
 STRING : '"' ~["]* '"' ;
 IDENT : [a-zA-Z_][a-zA-Z_0-9]* ;
+LIT : [0-9]+ ;
 WS : [ \r\n\t]+ -> skip;
 COMMENT : '\'' .*? ('\r\n' | '\n') ;
 
 newtype : NEWTYPE IDENT EQ (PRIM SEMI | IDENT SEMI | object) ;
-category : CATEGORY IDENT LBRACE (include | method) RBRACE ;
+category : CATEGORY IDENT EQ LIT LBRACE (include | method) RBRACE ;
 include : INCLUDE STRING SEMI ;
-property : IDENT '=' (object | PRIM) SEMI ;
-method : METHOD IDENT LBRACE ATTR* RBRACE LBRACE COMMENT* property* RBRACE ;
+property : IDENT EQ (object | PRIM) SEMI ;
+method : METHOD IDENT EQ LIT LBRACE ATTR* RBRACE LBRACE COMMENT* property* RBRACE ;
 object : LBRACE (field COMMA)* (field COMMA?)? RBRACE ;
 field : IDENT ':' IDENT ;
 
