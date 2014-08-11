@@ -46,7 +46,7 @@ pub struct Method {
     comment: String,
     id: u64,
     properties: HashMap<String, Type>,
-    attributes: Vec<Attr>,
+    attributes: Vec<String>,
 }
 
 #[deriving(Show, Ord, Eq, PartialOrd, PartialEq, Hash, Encodable, Decodable)]
@@ -57,17 +57,7 @@ pub enum ParseError {
 }
 
 #[deriving(Show, Clone, Ord, Eq, PartialOrd, PartialEq, Hash, Encodable, Decodable)]
-pub enum Attr {
-    Auth,
-    Unauth,
-    Admin,
-    Global,
-    Map,
-}
-
-#[deriving(Show, Clone, Ord, Eq, PartialOrd, PartialEq, Hash, Encodable, Decodable)]
 enum Token {
-    ATTR(Attr),
     STRING(String),
     IDENT(String),
     PRIM(Type),
@@ -172,11 +162,6 @@ impl<R: Iterator<char>> Iterator<Token> for Lexer<R> {
                     // we just accidentally read past the character after the ident. do some
                     // shenanigans to get outside of the chrs borrow and seek.
                     ident_token = match ident.as_slice() {
-                        "auth" => Some(ATTR(Auth)),
-                        "unauth" => Some(ATTR(Unauth)),
-                        "admin" => Some(ATTR(Admin)),
-                        "global" => Some(ATTR(Global)),
-                        "map" => Some(ATTR(Map)),
                         "newtype" => Some(NEWTYPE),
                         "category" => Some(CATEGORY),
                         "include" => Some(INCLUDE),
@@ -364,8 +349,8 @@ impl<R: Iterator<char>> Parser<R> {
         self.expect(LBRACE);
         let mut attrs = Vec::new();
         loop {
-            match self.expect_one_of([ATTR(Auth), RBRACE]) {
-                ATTR(a) => {
+            match self.expect_one_of([IDENT(String::new()), RBRACE]) {
+                IDENT(a) => {
                     attrs.push(a);
                     match self.lookahead {
                         COMMA => { debug_assert_eq!(COMMA, self.next()); },

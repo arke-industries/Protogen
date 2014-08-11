@@ -1,6 +1,5 @@
 grammar Protogen;
 
-ATTR : 'auth' | 'unauth' | 'admin' | 'global' | 'map' ;
 NEWTYPE : 'newtype' ;
 CATEGORY : 'category' ;
 INCLUDE : 'include' ;
@@ -30,7 +29,7 @@ newtype : NEWTYPE IDENT EQ (PRIM SEMI | IDENT SEMI | object) ;
 category : CATEGORY IDENT EQ LIT LBRACE (include | method) RBRACE ;
 include : INCLUDE STRING SEMI ;
 property : IDENT EQ (object | PRIM) SEMI ;
-method : METHOD IDENT EQ LIT LBRACE ATTR* RBRACE LBRACE COMMENT* property* RBRACE ;
+method : METHOD IDENT EQ LIT LBRACE IDENT* RBRACE LBRACE COMMENT* property* RBRACE ;
 object : LBRACE (field COMMA)* (field COMMA?)? RBRACE ;
 field : IDENT ':' IDENT ;
 
