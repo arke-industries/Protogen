@@ -139,6 +139,7 @@ impl<R: Iterator<char>> Iterator<Token> for Lexer<R> {
                 '"' => {
                     return Some(STRING(self.reader.by_ref().take_while(|&c| c != '"').collect()));
                 }
+                // maybe newline
                 '\r' => {
                     if *self.reader.peek().unwrap() != '\n' {
                         error!("CR found not followed by LF!");
@@ -146,6 +147,7 @@ impl<R: Iterator<char>> Iterator<Token> for Lexer<R> {
                         self.reader.next();
                     }
                 },
+                // doc comment, goes until end of line
                 '\'' => {
                     let c: String = self.reader.by_ref().take_while(|&c| c != '\n' && c != '\r').collect();
                     let mut c = c.as_slice();
@@ -157,6 +159,7 @@ impl<R: Iterator<char>> Iterator<Token> for Lexer<R> {
                     }
                     return Some(COMMENT(c.to_string()));
                 },
+                // numeric literal
                 c @ '0'..'9' => {
                     let mut lit = String::new();
                     lit.push_char(c);
@@ -201,6 +204,7 @@ impl<R: Iterator<char>> Iterator<Token> for Lexer<R> {
                     };
                     break
                 },
+                // various punctuation
                 ';' => return Some(SEMI),
                 ':' => return Some(COLON),
                 '{' => return Some(LBRACE),
