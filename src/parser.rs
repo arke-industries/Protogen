@@ -135,6 +135,11 @@ impl<R: Iterator<char>> Iterator<Token> for Lexer<R> {
         for c in self.reader {
             // could be anything...
             match c {
+                // comment
+                '#' => {
+                    self.reader.by_ref().take_while(|&c| c != '\n').count();
+                    continue
+                },
                 // string literal
                 '"' => {
                     return Some(STRING(self.reader.by_ref().take_while(|&c| c != '"').collect()));

@@ -5,6 +5,7 @@ newtype Size = u32;
 newtype MapObject = {
 	x: Coordinate,
 	y: Coordinate,
+    # This could be amazing if it weren't for being lame.
 	planetId: ObjectId,
 	width: Size,
 	height: Size
