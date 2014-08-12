@@ -26,6 +26,7 @@ pub enum Type {
     I32, U32, F32,
     I64, U64, F64,
     Array(Box<Type>),
+    Map(Box<Type>, Box<Type>),
     Aggregate(Object),
     NamedType(String),
 }
@@ -72,6 +73,8 @@ enum Token {
     SEMI,
     LBRACE,
     RBRACE,
+    LT,
+    GT,
     COMMA,
     EQ,
     COLON,
@@ -179,6 +182,8 @@ impl<R: Iterator<char>> Iterator<Token> for Lexer<R> {
                 ':' => return Some(COLON),
                 '{' => return Some(LBRACE),
                 '}' => return Some(RBRACE),
+                '<' => return Some(LT),
+                '>' => return Some(GT),
                 ',' => return Some(COMMA),
                 '=' => return Some(EQ),
                 ' ' | '\t' | '\n' => continue,
@@ -304,10 +309,7 @@ impl<R: Iterator<char>> Parser<R> {
         let name = self.expect_ident();
         self.expect(EQ);
         let ty = self.parse_type();
-        match ty {
-            Aggregate(..) => { },
-            _ => { self.expect(SEMI); }
-        }
+        self.expect(SEMI);
         (name, ty)
     }
 
@@ -398,7 +400,8 @@ impl<R: Iterator<char>> Parser<R> {
 
     fn parse_property(&mut self) -> Type {
         self.expect(EQ);
-        let ty = self.parse_type();
+        self.expect(LBRACE);
+        let ty = self.parse_aggregate();
         self.expect(SEMI);
         ty
     }
@@ -406,7 +409,25 @@ impl<R: Iterator<char>> Parser<R> {
     fn parse_type(&mut self) -> Type {
         match self.expect_one_of([PRIM(I8), IDENT(String::new()), LBRACE]) {
             PRIM(ty) => ty,
-            IDENT(ty) => NamedType(ty),
+            IDENT(ty) => {
+                match ty.as_slice() {
+                    "array" => {
+                        self.expect(LT);
+                        let contained_t = box self.parse_type();
+                        self.expect(GT);
+                        Array(contained_t)
+                    },
+                    "map" => {
+                        self.expect(LT);
+                        let from_type = box self.parse_type();
+                        self.expect(COMMA);
+                        let to_type = box self.parse_type();
+                        self.expect(GT);
+                        Map(from_type, to_type)
+                    },
+                    _ => NamedType(ty)
+                }
+            }
             LBRACE => {
                 self.parse_aggregate()
             },
@@ -463,9 +484,6 @@ fn try_parse_type(s: &str) -> Option<Type> {
         "i64" => Some(I64),
         "u64" => Some(U64),
         "f64" => Some(F64),
-        other if other.starts_with("array<") => {
-            Some(Array(box try_parse_type(other.slice(6, other.len() - 2)).unwrap()))
-        }
         _ => {
             None
         }

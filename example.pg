@@ -8,7 +8,7 @@ newtype MapObject = {
 	planetId: ObjectId,
 	width: Size,
 	height: Size
-}
+};
 category Map = 0 { include "Map.pg"; }
 category User = 1 {
 	method Login = 0 { unauth global } {
@@ -18,4 +18,8 @@ category User = 1 {
 		in = {email: string, password: string};
 		out = {userId: ObjectId };
 	}
+    method Logout = 1 { auth global } {
+        ' Log out, returning every object the user created.
+        out = {actions: map<u16, MapObject>};
+    }
 }
