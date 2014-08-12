@@ -6,6 +6,7 @@ INCLUDE : 'include' ;
 METHOD : 'method' ;
 ARRAY : 'array' ;
 MAP : 'map' ;
+CONFIG : 'config' ;
 PRIM
     : 'i8' | 'u8'
     | 'i16' | 'u16'
@@ -19,6 +20,7 @@ LT : '<' ;
 GT : '>' ;
 COMMA : ',' ;
 EQ : '=' ;
+COLON : ':';
 
 STRING : '"' ~["]* '"' ;
 IDENT : [a-zA-Z_][a-zA-Z_0-9]* ;
@@ -33,6 +35,8 @@ include : INCLUDE STRING SEMI ;
 property : IDENT EQ object SEMI ;
 method : METHOD IDENT EQ LIT LBRACE IDENT* RBRACE LBRACE COMMENT* property* RBRACE ;
 object : LBRACE (field COMMA)* (field COMMA?)? RBRACE ;
-field : IDENT ':' type ;
+field : IDENT COLON type ;
+valfield : IDENT COLON LIT ;
+config : CONFIG LBRACE (valfield COMMA)* (valfield COMMA?)? RBRACE ;
 
-protocol : (newtype | category | include)* ;
+protocol : config? (newtype | category | include)* ;

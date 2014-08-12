@@ -11,12 +11,33 @@
 // copies or substantial portions of the Software.
 
 use std::collections::hashmap::HashMap;
+use std::default::Default;
 use std;
 
 #[deriving(Show)]
+pub struct ProtoConfig {
+    message_id_bits: u64,
+    category_bits: u64,
+    method_bits: u64,
+    array_length_bits: u64,
+}
+
+impl Default for ProtoConfig {
+    fn default() -> ProtoConfig {
+        ProtoConfig {
+            message_id_bits: 16,
+            category_bits: 8,
+            method_bits: 8,
+            array_length_bits: 16,
+        }
+    }
+}
+
+#[deriving(Show)]
 pub struct Protocol {
-    types: HashMap<String, Type>,
-    categories: HashMap<String, Category>,
+    pub config: ProtoConfig,
+    pub types: HashMap<String, Type>,
+    pub categories: HashMap<String, Category>,
 }
 
 #[deriving(Show, Clone, Ord, Eq, PartialOrd, PartialEq, Hash, Encodable, Decodable)]
@@ -33,21 +54,21 @@ pub enum Type {
 
 #[deriving(Show, Clone, Ord, Eq, PartialOrd, PartialEq, Hash, Encodable, Decodable)]
 pub struct Object {
-    fields: Vec<(String, Type)>,
+    pub fields: Vec<(String, Type)>,
 }
 
 #[deriving(Show)]
 pub struct Category {
-    id: u64,
-    methods: HashMap<String, Method>,
+    pub id: u64,
+    pub methods: HashMap<String, Method>,
 }
 
 #[deriving(Show, Encodable, Decodable)]
 pub struct Method {
-    comment: String,
-    id: u64,
-    properties: HashMap<String, Type>,
-    attributes: Vec<String>,
+    pub comment: String,
+    pub id: u64,
+    pub properties: HashMap<String, Type>,
+    pub attributes: Vec<String>,
 }
 
 #[deriving(Show, Ord, Eq, PartialOrd, PartialEq, Hash, Encodable, Decodable)]
@@ -69,6 +90,7 @@ enum Token {
     CATEGORY,
     INCLUDE,
     METHOD,
+    CONFIG,
 
     SEMI,
     LBRACE,
@@ -169,8 +191,9 @@ impl<R: Iterator<char>> Iterator<Token> for Lexer<R> {
                         "category" => Some(CATEGORY),
                         "include" => Some(INCLUDE),
                         "method" => Some(METHOD),
+                        "config" => Some(CONFIG),
                         non_keyword => {
-                            match try_parse_type(non_keyword) {
+                            match try_lex_prim(non_keyword) {
                                 Some(t) => Some(PRIM(t)),
                                 None => Some(IDENT(non_keyword.to_string()))
                             }
@@ -272,11 +295,48 @@ impl<R: Iterator<char>> Parser<R> {
         }
     }
 
-    fn parse_protocol(&mut self) -> Protocol {
+    fn parse_config(&mut self) -> ProtoConfig {
+        let mut pc: ProtoConfig = Default::default();
+        self.expect(CONFIG);
+        self.expect(LBRACE);
+        loop {
+            let name = self.expect_ident();
+            self.expect(COLON);
+            let val = self.expect_lit();
+            match name.as_slice() {
+                "message_id_bits" => pc.message_id_bits = val,
+                "category_bits" => pc.category_bits = val,
+                "method_bits" => pc.method_bits = val,
+                "array_length_bits" => pc.array_length_bits = val,
+                f => fail!("Unrecognized config field {}", f)
+            }
+
+            match self.lookahead {
+                COMMA => { debug_assert_eq!(COMMA, self.next()) },
+                RBRACE => break,
+                _ => { }
+            }
+        }
+        self.expect(RBRACE);
+        pc
+    }
+
+    fn parse_protocol(&mut self, config_allowed: bool) -> Protocol {
         let mut proto = Protocol {
+            config: Default::default(),
             types: HashMap::new(),
             categories: HashMap::new()
         };
+
+        match self.lookahead {
+            CONFIG => {
+                if !config_allowed {
+                    fail!("Found config section in included file!")
+                }
+                proto.config = self.parse_config()
+            },
+            _ => { }
+        }
 
         loop {
             match self.expect_one_of([NEWTYPE, CATEGORY, INCLUDE, EOF]) {
@@ -292,7 +352,7 @@ impl<R: Iterator<char>> Parser<R> {
                     let p = self.expect_string();
                     let mut buf = open(p);
                     let mut parser = Parser::new(Lexer::new(&mut buf));
-                    let Protocol { types, categories } = parser.parse_protocol();
+                    let Protocol { config: _config, types, categories } = parser.parse_protocol(false);
                     proto.types.extend(types.move_iter());
                     proto.categories.extend(categories.move_iter());
                     self.expect(SEMI);
@@ -461,7 +521,7 @@ pub fn parse(file: String) -> Result<Protocol, ParseError> {
     let mut buf = open(file);
     let mut parser = Parser::new(Lexer::new(&mut buf));
 
-    Ok(parser.parse_protocol())
+    Ok(parser.parse_protocol(true))
 }
 
 pub fn lex(file: String) {
@@ -472,7 +532,7 @@ pub fn lex(file: String) {
     }
 }
 
-fn try_parse_type(s: &str) -> Option<Type> {
+fn try_lex_prim(s: &str) -> Option<Type> {
     match s {
         "i8" => Some(I8),
         "u8" => Some(U8),
