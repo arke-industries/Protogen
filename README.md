@@ -1,7 +1,7 @@
-protogen
+Protogen
 ========
 
-protogen is used to generate a serialization/deserialization interface for the
+Protogen is used to generate a serialization/deserialization interface for the
 Arke Industries Interchange Protocol (AIIP). It is made available under the
 terms of the [MIT license](LICENSE).
 
