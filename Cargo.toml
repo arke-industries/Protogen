@@ -3,8 +3,6 @@ name = "protogen"
 version = "0.1.0"
 authors = ["Corey Richardson <corey@octayn.net>"]
 
-[dependencies.docopt]
-git = "https://github.com/docopt/docopt.rs"
-
-[dependencies.docopt_macros]
-git = "https://github.com/docopt/docopt.rs"
+[dependencies]
+docopt = "*"
+docopt_macros = "*"
