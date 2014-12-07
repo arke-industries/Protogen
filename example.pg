@@ -3,22 +3,23 @@ newtype Coordinate = f64;
 newtype Size = u32;
 
 newtype MapObject = {
-	x: Coordinate,
-	y: Coordinate,
+    x: Coordinate,
+    y: Coordinate,
     # This could be amazing if it weren't for being lame.
-	planetId: ObjectId,
-	width: Size,
-	height: Size
+    planetId: ObjectId,
+    width: Size,
+    height: Size,
+    name: string,
 };
+
 category Map = 0 { include "Map.pg"; }
 category User = 1 {
-	method Login = 0 { unauth global } {
+    method Login = 0 { unauth global } {
         ' Authenticates to the server using an email/password, returning the
         ' corresponding users' ID.
-
-		in = {email: string, password: string};
-		out = {userId: ObjectId };
-	}
+        in = {email: string, password: string};
+        out = {userId: ObjectId };
+    }
     method Logout = 1 { auth global } {
         ' Log out, returning every object the user created.
         out = {actions: map<u16, MapObject>};

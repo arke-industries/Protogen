@@ -31,7 +31,7 @@ Options:
 ")
 
 mod parser;
-//mod check;
+mod check;
 
 fn main() {
     let args: Args = Args::docopt().decode().unwrap_or_else(|e| e.exit());
@@ -49,7 +49,7 @@ fn main() {
         return;
     }
 
-    //check::check(&proto);
+    check::check(&proto);
 
     if args.flag_check_only {
         return;

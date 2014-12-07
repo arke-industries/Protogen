@@ -53,6 +53,7 @@ pub enum Type {
     Map(Box<Type>, Box<Type>),
     Aggregate(Object),
     NamedType(String),
+    StringType,
 }
 
 #[deriving(Show, Clone, Ord, Eq, PartialOrd, PartialEq, Hash, Encodable, Decodable)]
@@ -500,6 +501,9 @@ impl<R: Iterator<char>> Parser<R> {
                         let to_type = box self.parse_type();
                         self.expect(GT);
                         Map(from_type, to_type)
+                    },
+                    "string" => {
+                        StringType
                     },
                     _ => NamedType(ty)
                 }

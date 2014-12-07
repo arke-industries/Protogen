@@ -7,6 +7,7 @@ METHOD : 'method' ;
 ARRAY : 'array' ;
 MAP : 'map' ;
 CONFIG : 'config' ;
+STRINGTY : 'string' ;
 PRIM
     : 'i8' | 'u8'
     | 'i16' | 'u16'
@@ -28,7 +29,7 @@ LIT : [0-9]+ ;
 WS : [ \r\n\t]+ -> skip;
 COMMENT : '\'' .*? ('\r\n' | '\n') ;
 
-type : PRIM | ARRAY LT type GT | MAP LT type COMMA type GT | IDENT | object;
+type : PRIM | ARRAY LT type GT | MAP LT type COMMA type GT | IDENT | STRINGTY | object;
 newtype : NEWTYPE IDENT EQ type  SEMI ;
 category : CATEGORY IDENT EQ LIT LBRACE (include | method)* RBRACE ;
 include : INCLUDE STRING SEMI ;
