@@ -10,7 +10,7 @@
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
 
-#![feature(phase)]
+#![feature(phase, globs)]
 
 extern crate serialize;
 
@@ -20,21 +20,21 @@ extern crate docopt;
 #[phase(link, plugin)] extern crate log;
 
 
-docopt!(Args, "
-Usage: protogen [-l | -p] [-o <outfile>] <infile>
+docopt!(Args deriving Show, "
+Usage: protogen [-l | -p | -c] [-o <outfile>] <infile>
 
 Options:
     -o, --output      File to write generated code to.
     -l, --lex-only    Only run the lexer, printing out the token stream.
-    -p, --parse-only  Only run the parser, printing out the parsed protocol.
+    -p, --parse-only  Run up to the parser, printing out the parsed protocol.
+    -c, --check-only  Run up to validity checking, printing out the analysis.
 ")
 
 mod parser;
+//mod check;
 
 fn main() {
-    use docopt::FlagParser;
-
-    let args: Args = FlagParser::parse().unwrap_or_else(|e| e.exit());
+    let args: Args = Args::docopt().decode().unwrap_or_else(|e| e.exit());
 
     debug!("Args: {}", args);
 
@@ -46,6 +46,12 @@ fn main() {
 
     if args.flag_parse_only {
         println!("{}", proto);
+        return;
+    }
+
+    //check::check(&proto);
+
+    if args.flag_check_only {
         return;
     }
 }

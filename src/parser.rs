@@ -10,9 +10,12 @@
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
 
-use std::collections::hashmap::HashMap;
+use std::collections::HashMap;
 use std::default::Default;
 use std;
+
+use self::Type::*;
+use self::Token::*;
 
 #[deriving(Show)]
 pub struct ProtoConfig {
@@ -132,7 +135,11 @@ impl<R: Iterator<char>> Iterator<Token> for Lexer<R> {
         }
         // IO errors are interesting and never expected.
         let mut ident_token = None;
-        for c in self.reader {
+        loop {
+            let c = match self.reader.next() {
+                Some(c) => c,
+                None => break
+            };
             // could be anything...
             match c {
                 // comment
@@ -165,13 +172,13 @@ impl<R: Iterator<char>> Iterator<Token> for Lexer<R> {
                     return Some(COMMENT(c.to_string()));
                 },
                 // numeric literal
-                c @ '0'..'9' => {
+                c @ '0'...'9' => {
                     let mut lit = String::new();
-                    lit.push_char(c);
+                    lit.push(c);
                     loop {
-                        if self.reader.peek().unwrap().is_digit() {
+                        if self.reader.peek().unwrap().is_digit(10) {
                             let c = self.reader.next().unwrap();
-                            lit.push_char(c);
+                            lit.push(c);
                         } else {
                             break;
                         }
@@ -179,14 +186,14 @@ impl<R: Iterator<char>> Iterator<Token> for Lexer<R> {
                     return Some(LIT(from_str(lit.as_slice()).expect("Lexer accepted invalid numeric literal!")));
                 },
                 // keyword or identifier
-                c @ 'a'..'z' | c @ 'A'..'Z' | c @ '_' => {
+                c @ 'a'...'z' | c @ 'A'...'Z' | c @ '_' => {
                     let mut ident = String::with_capacity(16);
-                    ident.push_char(c);
+                    ident.push(c);
                     loop {
                         let c = *self.reader.peek().unwrap();
                         if c.is_alphanumeric() || c == '_' {
                             let c = self.reader.next().unwrap();
-                            ident.push_char(c);
+                            ident.push(c);
                         } else {
                             break;
                         }
@@ -267,7 +274,7 @@ impl<R: Iterator<char>> Parser<R> {
         let next = self.next();
         if !token_types_eq(&tok, &next) {
             debug!("expect lookahead: {}", self.lookahead);
-            fail!("Expected `{}`, found `{}`", tok, next);
+            panic!("Expected `{}`, found `{}`", tok, next);
         }
         next
     }
@@ -280,7 +287,7 @@ impl<R: Iterator<char>> Parser<R> {
                 return self.next();
             }
         }
-        fail!("Unexpected token `{}`, expected one of: {}", next, toks.iter().map(|t| t.to_string()).collect::<Vec<String>>().connect(", "))
+        panic!("Unexpected token `{}`, expected one of: {}", next, toks.iter().map(|t| t.to_string()).collect::<Vec<String>>().connect(", "))
     }
 
     fn expect_string(&mut self) -> String {
@@ -317,7 +324,7 @@ impl<R: Iterator<char>> Parser<R> {
                 "category_bits" => pc.category_bits = val,
                 "method_bits" => pc.method_bits = val,
                 "array_length_bits" => pc.array_length_bits = val,
-                f => fail!("Unrecognized config field {}", f)
+                f => panic!("Unrecognized config field {}", f)
             }
 
             match self.lookahead {
@@ -340,7 +347,7 @@ impl<R: Iterator<char>> Parser<R> {
         match self.lookahead {
             CONFIG => {
                 if !config_allowed {
-                    fail!("Found config section in included file!")
+                    panic!("Found config section in included file!")
                 }
                 proto.config = self.parse_config()
             },
@@ -348,7 +355,7 @@ impl<R: Iterator<char>> Parser<R> {
         }
 
         loop {
-            match self.expect_one_of([NEWTYPE, CATEGORY, INCLUDE, EOF]) {
+            match self.expect_one_of(&[NEWTYPE, CATEGORY, INCLUDE, EOF]) {
                 NEWTYPE => {
                     let (name, type_) = self.parse_newtype();
                     proto.types.insert(name, type_);
@@ -362,8 +369,8 @@ impl<R: Iterator<char>> Parser<R> {
                     let mut buf = open(p);
                     let mut parser = Parser::new(Lexer::new(&mut buf));
                     let Protocol { config: _config, types, categories } = parser.parse_protocol(false);
-                    proto.types.extend(types.move_iter());
-                    proto.categories.extend(categories.move_iter());
+                    proto.types.extend(types.into_iter());
+                    proto.categories.extend(categories.into_iter());
                     self.expect(SEMI);
                 },
                 EOF => break,
@@ -395,7 +402,7 @@ impl<R: Iterator<char>> Parser<R> {
 
     fn parse_category_body(&mut self, cat: &mut Category) {
         loop {
-            match self.expect_one_of([INCLUDE, METHOD, RBRACE, EOF]) {
+            match self.expect_one_of(&[INCLUDE, METHOD, RBRACE, EOF]) {
                 EOF | RBRACE => break,
                 INCLUDE => {
                     let s = self.expect_string();
@@ -420,7 +427,7 @@ impl<R: Iterator<char>> Parser<R> {
         self.expect(LBRACE);
         let mut attrs = Vec::new();
         loop {
-            match self.expect_one_of([IDENT(String::new()), RBRACE]) {
+            match self.expect_one_of(&[IDENT(String::new()), RBRACE]) {
                 IDENT(a) => {
                     attrs.push(a);
                     match self.lookahead {
@@ -437,9 +444,9 @@ impl<R: Iterator<char>> Parser<R> {
         let mut first_prop = None;
         self.expect(LBRACE);
         loop {
-            match self.expect_one_of([COMMENT(String::new()), IDENT(String::new()), RBRACE]) {
+            match self.expect_one_of(&[COMMENT(String::new()), IDENT(String::new()), RBRACE]) {
                 // slice off the leading '
-                COMMENT(c) => { comment.push_str(c.as_slice().slice_from(1)); comment.push_char('\n'); },
+                COMMENT(c) => { comment.push_str(c.as_slice().slice_from(1)); comment.push('\n'); },
                 IDENT(c) => { first_prop = Some(c); break },
                 RBRACE => break,
                 _ => unreachable!(),
@@ -449,7 +456,7 @@ impl<R: Iterator<char>> Parser<R> {
             Some(id) => {
                 props.insert(id, self.parse_property());
                 loop {
-                    match self.expect_one_of([IDENT(String::new()), RBRACE]) {
+                    match self.expect_one_of(&[IDENT(String::new()), RBRACE]) {
                         IDENT(i) => { props.insert(i, self.parse_property()); },
                         RBRACE => break,
                         _ => unreachable!()
@@ -476,7 +483,7 @@ impl<R: Iterator<char>> Parser<R> {
     }
 
     fn parse_type(&mut self) -> Type {
-        match self.expect_one_of([PRIM(I8), IDENT(String::new()), LBRACE]) {
+        match self.expect_one_of(&[PRIM(I8), IDENT(String::new()), LBRACE]) {
             PRIM(ty) => ty,
             IDENT(ty) => {
                 match ty.as_slice() {
@@ -507,7 +514,7 @@ impl<R: Iterator<char>> Parser<R> {
     fn parse_aggregate(&mut self) -> Type {
         let mut fields = Vec::new();
         loop {
-            match self.expect_one_of([IDENT(String::new()), RBRACE, COMMA]) {
+            match self.expect_one_of(&[IDENT(String::new()), RBRACE, COMMA]) {
                 IDENT(name) => {
                     self.expect(COLON);
                     let type_ = self.parse_type();
