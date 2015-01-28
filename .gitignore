@@ -5,3 +5,4 @@ __pycache__
 /include
 /lib
 /lib64
+parser.py
