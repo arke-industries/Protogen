@@ -1,2 +1,7 @@
 *.swp
-/target
+*.pyc
+__pycache__
+/bin
+/include
+/lib
+/lib64
