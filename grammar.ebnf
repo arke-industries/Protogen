@@ -5,7 +5,8 @@ doccomment = "'" @:/.*/ ;
 
 lit = (@:number | @:string) ;
 
-server = 'server' name:ident '=' code:lit ';' ;
+server = 'server' name:ident ';' ;
+notif = 'notification' name:ident ';' ;
 
 config = 'config' '{' {@+:valfield ','} [@+:valfield [',']] '}' ;
 valfield  =  name:ident ':' value:lit ;
@@ -35,7 +36,7 @@ object    =  '{' {@+:field ','} [@+:field [',']] '}' ;
 newtype   =  'type' name:ident '=' type:type ';' ;
 include   =  'include' @:string ';' ;
 property  =  [attributes:attrs] name:ident '=' type:type ';' ;
-method    =  [attributes:attrs] 'method' name:ident '=' code:lit ['{' attrs:{ident} '}'] '{' doccomments:{doccomment} properties:{property} '}' ;
+method    =  [attributes:attrs] 'method' name:ident ['{' attrs:{ident} '}'] '{' doccomments:{doccomment} properties:{property} '}' ;
 
-category  =  'category' name:ident '=' code:lit '{' {properties+:(name:ident '=' val:ident ';') | includes+:include | methods+:method} '}' ;
-protocol = config:[config] {servers+:server | types+:newtype | categories+:category | includes+:include} $ ;
+category  =  'category' name:ident '{' {properties+:property | includes+:include | methods+:method} '}' ;
+protocol = config:[config] {notifications+:notif | servers+:server | types+:newtype | categories+:category | includes+:include} $ ;

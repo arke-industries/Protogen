@@ -1,10 +1,13 @@
-server Global = 0;
+server Global;
+
+notification MessageReceived;
+
 type UserId = u64;
 type ObjectId = u64;
 
-category User = 0 {
+category User {
     server = Global;
-    method Login = 0 {
+    method Login {
         in = {
             [RegularExpression("^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")]
             emailAddress: string,
@@ -14,7 +17,7 @@ category User = 0 {
             userId: UserId
         };
     }
-    method Register = 1 {
+    method Register {
         in = {
             [RegularExpression("^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")]
             emailAddress: string,
@@ -27,9 +30,9 @@ category User = 0 {
     }
 }
 
-category Message = 1 {
+category Message {
     server = Global;
-    method Send = 0 {
+    method Send {
         in = {
             [ObjectId]
             receiverUserId: UserId,
@@ -43,7 +46,7 @@ category Message = 1 {
             messageId: ObjectId
         };
     }
-    method Get = 1 {
+    method Get {
         in = {
             [ObjectId]
             messageId: ObjectId
@@ -57,7 +60,7 @@ category Message = 1 {
             senderUserId: UserId,
         };
     }
-    method GetList = 2 {
+    method GetList {
         [List]
         out = {
             subject: string,
@@ -68,7 +71,7 @@ category Message = 1 {
             senderUserId: UserId
         };
     }
-    method Delete = 3 {
+    method Delete {
         in = {
             [ObjectId]
             messageId: ObjectId,
