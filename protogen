@@ -12,6 +12,7 @@ import argparse
 import sys
 
 from parser import ProtogenParser
+from generators import cs
 
 args = docopt(__doc__, version='Protogen 0.0.1')
 debug = args["--debug"]
@@ -28,3 +29,4 @@ if debug:
     print("JSON:")
     print(json.dumps(ast, indent=2))
 
+cs.generate(ast)
