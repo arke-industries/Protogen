@@ -64,7 +64,7 @@ category Message {
         };
     }
     method GetList {
-        [List]
+        [List(Class = "Message")]
         out = {
             subject: string,
             text: string,
