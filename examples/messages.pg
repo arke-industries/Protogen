@@ -2,6 +2,9 @@ server Global;
 
 notification MessageReceived;
 
+response EMailTaken;
+response CharacerNameTaken;
+
 type UserId = u64;
 type ObjectId = u64;
 

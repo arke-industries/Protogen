@@ -7,6 +7,7 @@ lit = (@:number | @:string) ;
 
 server = 'server' name:ident ';' ;
 notif = 'notification' name:ident ';' ;
+resp = 'response' name:ident ';' ;
 
 config = 'config' '{' {@+:valfield ','} [@+:valfield [',']] '}' ;
 valfield  =  name:ident ':' value:lit ;
@@ -39,4 +40,4 @@ property  =  [attributes:attrs] name:ident '=' type:type ';' ;
 method    =  [attributes:attrs] 'method' name:ident ['{' attrs:{ident} '}'] '{' doccomments:{doccomment} properties:{property} '}' ;
 
 category  =  'category' name:ident '{' {properties+:property | includes+:include | methods+:method} '}' ;
-protocol = config:[config] {notifications+:notif | servers+:server | types+:newtype | categories+:category | includes+:include} $ ;
+protocol = config:[config] {response_codes+:resp | notifications+:notif | servers+:server | types+:newtype | categories+:category | includes+:include} $ ;
