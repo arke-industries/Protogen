@@ -1,8 +1,8 @@
-newtype ObjectId = u64;
-newtype Coordinate = f64;
-newtype Size = u32;
+type ObjectId = u64;
+type Coordinate = f64;
+type Size = u32;
 
-newtype MapObject = {
+type MapObject = {
     x: Coordinate,
     y: Coordinate,
     # This could be amazing if it weren't for being lame.

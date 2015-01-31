@@ -1,0 +1,77 @@
+server Global = 0;
+type UserId = u64;
+type ObjectId = u64;
+
+category User = 0 {
+    server = Global;
+    method Login = 0 {
+        in = {
+            [RegularExpression("^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")]
+            emailAddress: string,
+            password: string,
+        };
+        out = {
+            userId: UserId
+        };
+    }
+    method Register = 1 {
+        in = {
+            [RegularExpression("^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")]
+            emailAddress: string,
+            password: string,
+            characterName: string
+        };
+        out = {
+            userId: UserId
+        };
+    }
+}
+
+category Message = 1 {
+    server = Global;
+    method Send = 0 {
+        in = {
+            [ObjectId]
+            receiverUserId: UserId,
+            [ObjectId(Optional = true)]
+            conversationId: UserId,
+            subject: string,
+            [MaxLength=1000000]
+            message: string,
+        };
+        out = {
+            messageId: ObjectId
+        };
+    }
+    method Get = 1 {
+        in = {
+            [ObjectId]
+            messageId: ObjectId
+        };
+        out = {
+            subject: string,
+            text: string,
+            sent: DateTime,
+            type: u32,
+            receiverUserId: UserId,
+            senderUserId: UserId,
+        };
+    }
+    method GetList = 2 {
+        [List]
+        out = {
+            subject: string,
+            text: string,
+            sent: DateTime,
+            type: u32,
+            receiverUserId: UserId,
+            senderUserId: UserId
+        };
+    }
+    method Delete = 3 {
+        in = {
+            [ObjectId]
+            messageId: ObjectId,
+        };
+    }
+}

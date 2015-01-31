@@ -1,19 +1,17 @@
 string = /"[^"]+"/ ;
 ident = /[a-zA-Z_][a-zA-Z_0-9]*/ ;
-lit = /\d+/ ;
+number = /\d+/ ;
 doccomment = "'" @:/.*/ ;
 
-protocol = config:[config] {types+:newtype | categories+:category | includes+:include} $ ;
+lit = (@:number | @:string) ;
+
+server = 'server' name:ident '=' code:lit ';' ;
 
 config = 'config' '{' {@+:valfield ','} [@+:valfield [',']] '}' ;
 valfield  =  name:ident ':' value:lit ;
 
-newtype   =  'newtype' name:ident '=' type:type ';' ;
-category  =  'category' name:ident '=' code:lit '{' {includes+:include | methods+:method} '}' ;
-include   =  'include' @:string ';' ;
-
-method    =  'method' name:ident '=' code:lit '{' attrs:{ident} '}' '{' doccomments:{doccomment} properties:{property} '}' ;
-property  =  name:ident '=' type:type ';' ;
+attr_inner = name:ident '=' val:(lit | ident) | name:ident '(' args:{attr_inner ','} args+:[attr_inner [',']] ')' | plain:(lit | ident);
+attrs = {'[' @:attr_inner ']'} ;
 
 type
     = @:primitive
@@ -31,5 +29,13 @@ primitive
     | 'i64' | 'u64' | 'f64'
     ;
 
+field     =  [attributes:attrs] name:ident ':' type:type ;
 object    =  '{' {@+:field ','} [@+:field [',']] '}' ;
-field     =  name:ident ':' type:type ;
+
+newtype   =  'type' name:ident '=' type:type ';' ;
+include   =  'include' @:string ';' ;
+property  =  [attributes:attrs] name:ident '=' type:type ';' ;
+method    =  [attributes:attrs] 'method' name:ident '=' code:lit ['{' attrs:{ident} '}'] '{' doccomments:{doccomment} properties:{property} '}' ;
+
+category  =  'category' name:ident '=' code:lit '{' {properties+:(name:ident '=' val:ident ';') | includes+:include | methods+:method} '}' ;
+protocol = config:[config] {servers+:server | types+:newtype | categories+:category | includes+:include} $ ;
