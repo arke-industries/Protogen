@@ -29,4 +29,4 @@ if debug:
     print("JSON:")
     print(json.dumps(ast, indent=2))
 
-cs.generate(ast)
+print(cs.generate(ast))

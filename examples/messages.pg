@@ -1,83 +1,96 @@
 server Global;
+server Planet;
 
 notification MessageReceived;
 
 response EMailTaken;
-response CharacerNameTaken;
+response CharacterNameTaken;
+response ObjectNotFound;
 
-type UserId = u64;
+type UserId = i64;
 type ObjectId = u64;
 
 category User {
     server = Global;
+    auth = false;
     method Login {
         in = {
-            [RegularExpression("^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")]
-            emailAddress: string,
-            password: string,
+            [RegularExpression(@"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")]
+            [ApiString]
+            EmailAddress: string,
+            [ApiString]
+            Password: string,
         };
         out = {
-            userId: UserId
+            UserId: UserId
         };
     }
     method Register {
         in = {
-            [RegularExpression("^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")]
-            emailAddress: string,
-            password: string,
-            characterName: string
+            [RegularExpression(@"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$")]
+            [ApiString]
+            EmailAddress: string,
+            [ApiString]
+            Password: string,
+            [ApiString]
+            CharacterName: string
         };
         out = {
-            userId: UserId
+            UserId: UserId
         };
     }
 }
 
 category Message {
     server = Global;
+    auth = true;
     method Send {
         in = {
             [ObjectId]
-            receiverUserId: UserId,
+            ReceiverUserId: UserId,
             [ObjectId(Optional = true)]
-            conversationId: UserId,
-            subject: string,
-            [MaxLength=1000000]
-            message: string,
+            ConversationId: UserId,
+            [ApiString]
+            Subject: string,
+            [ApiString(MaxLength=1000000)]
+            Message: string,
         };
         out = {
-            messageId: ObjectId
+            MessageId: ObjectId
         };
     }
     method Get {
         in = {
             [ObjectId]
-            messageId: ObjectId
+            MessageId: ObjectId
         };
         out = {
-            subject: string,
-            text: string,
-            sent: DateTime,
-            type: u32,
-            receiverUserId: UserId,
-            senderUserId: UserId,
+            Subject: string,
+            Text: string,
+            Sent: DateTime,
+            Type: u32,
+            ReceiverUserId: UserId,
+            SenderUserId: UserId,
         };
     }
     method GetList {
+        in = {
+            GetReceived: bool,
+        };
         [List(Class = "Message")]
         out = {
-            subject: string,
-            text: string,
-            sent: DateTime,
-            type: u32,
-            receiverUserId: UserId,
-            senderUserId: UserId
+            Subject: string,
+            Text: string,
+            Sent: DateTime,
+            Type: u32,
+            ReceiverUserId: UserId,
+            SenderUserId: UserId
         };
     }
     method Delete {
         in = {
             [ObjectId]
-            messageId: ObjectId,
+            MessageId: ObjectId,
         };
     }
 }

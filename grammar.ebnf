@@ -1,4 +1,4 @@
-string = /"[^"]+"/ ;
+string = /@?"[^"]+"/ ;
 ident = /[a-zA-Z_][a-zA-Z_0-9]*/ ;
 number = /\d+/ ;
 doccomment = "'" @:/.*/ ;
@@ -12,8 +12,8 @@ resp = 'response' name:ident ';' ;
 config = 'config' '{' {@+:valfield ','} [@+:valfield [',']] '}' ;
 valfield  =  name:ident ':' value:lit ;
 
-attr_inner = name:ident '=' val:(lit | ident) | name:ident '(' args:{attr_inner ','} args+:[attr_inner [',']] ')' | plain:(lit | ident);
-attrs = {'[' @:attr_inner ']'} ;
+attr_inner = name:ident '=' val:(lit | ident) | name:ident '(' args+:{attr_inner ','} args+:[attr_inner [',']] ')' | plain:(lit | ident);
+attrs = {'[' @+:attr_inner ']'} ;
 
 type
     = @:primitive
@@ -37,7 +37,8 @@ object    =  '{' {@+:field ','} [@+:field [',']] '}' ;
 newtype   =  'type' name:ident '=' type:type ';' ;
 include   =  'include' @:string ';' ;
 property  =  [attributes:attrs] name:ident '=' type:type ';' ;
+catprop   =  name:ident '=' val:ident ';' ;
 method    =  [attributes:attrs] 'method' name:ident ['{' attrs:{ident} '}'] '{' doccomments:{doccomment} properties:{property} '}' ;
 
-category  =  'category' name:ident '{' {properties+:property | includes+:include | methods+:method} '}' ;
+category  =  'category' name:ident '{' {properties+:catprop | includes+:include | methods+:method} '}' ;
 protocol = config:[config] {response_codes+:resp | notifications+:notif | servers+:server | types+:newtype | categories+:category | includes+:include} $ ;
