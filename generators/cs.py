@@ -151,11 +151,12 @@ def normalize_methods(ast):
                 # simplify list attributes
                 meth["list_class_name"] = [n for n in lattr["args"] if "name" in n and n["name"] == "Class"][0]["val"].replace('"', '')
                 meth["base_class"] = "ListQueryMessageHandler<Objects.Database.Context, %s.%s>" % (meth["name"], meth["list_class_name"])
+                meth["is_list"] = True
             else:
                 meth["base_class"] = "MessageHandler<Objects.Database.Context>"
 
             meth["server_ids"] = " | ".join("ServerId.%s" % s for s in meth["meta"]["server"])
-            meth["attrs"] = "\n".join("[%s]" % sattr(a) for a in meth["attributes"])
+            meth["attrs"] = ["[%s]" % sattr(a) for a in meth["attributes"]]
 
             inps = [m for m in meth["properties"] if m["name"] == "in" ]
             outs = [m for m in meth["properties"] if m["name"] == "out"]

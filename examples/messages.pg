@@ -73,11 +73,11 @@ category Message {
             SenderUserId: UserId,
         };
     }
+    [List(Class = "Message")]
     method GetList {
         in = {
             GetReceived: bool,
         };
-        [List(Class = "Message")]
         out = {
             Subject: string,
             Text: string,
