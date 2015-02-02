@@ -156,7 +156,7 @@ def normalize_methods(ast):
                 meth["base_class"] = "MessageHandler<Objects.Database.Context>"
 
             meth["server_ids"] = " | ".join("ServerId.%s" % s for s in meth["meta"]["server"])
-            meth["attrs"] = ["[%s]" % sattr(a) for a in meth["attributes"]]
+            meth["attrs"] = ["[%s]" % sattr(a) for a in meth["attributes"] if len(a) != 0 and a["name"] != "List"]
 
             inps = [m for m in meth["properties"] if m["name"] == "in" ]
             outs = [m for m in meth["properties"] if m["name"] == "out"]
